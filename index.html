@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>จองคิวปรึกษา — Master Bangkok Clinic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  /* ===== Design tokens =====
+     Base: near-black premium surface, matching the clinic's existing
+     black / gold / white identity (not the generic cream+terracotta AI default).
+     Type: Prompt for display/eyebrow, Sarabun for body & form fields.
+     Signature: a single thin gold nose-profile line, a quiet callback
+     to the clinic's own anatomical nose-diagram documentation. */
+  :root{
+    --bg: #121212;
+    --surface: #1a1a1a;
+    --surface-2: #212121;
+    --line: rgba(201,166,107,0.22);
+    --gold: #c9a66b;
+    --gold-bright: #ddc188;
+    --paper: #f4f1ea;
+    --muted: #8f897d;
+    --error: #d9776b;
+    --success: #93b79b;
+    --radius: 14px;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html,body{
+    margin:0; padding:0; min-height:100%;
+    background: var(--bg);
+    color: var(--paper);
+    font-family: 'Sarabun', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body{
+    display:flex;
+    justify-content:center;
+    padding: 0 0 48px;
+  }
+
+  .page{
+    width:100%;
+    max-width: 480px;
+    min-height:100vh;
+    position:relative;
+  }
+
+  /* ---------- Header / signature ---------- */
+  .hero{
+    position:relative;
+    padding: 40px 28px 28px;
+    text-align:center;
+    overflow:hidden;
+  }
+
+  .hero__nose{
+    position:absolute;
+    top: 6px;
+    right: -30px;
+    width: 220px;
+    height: 220px;
+    opacity: 0.16;
+    pointer-events:none;
+  }
+
+  .eyebrow{
+    font-family:'Prompt', sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin: 0 0 10px;
+  }
+
+  .hero h1{
+    font-family:'Prompt', sans-serif;
+    font-weight:600;
+    font-size: 26px;
+    line-height:1.3;
+    margin: 0 0 8px;
+    color: var(--paper);
+  }
+
+  .hero p{
+    font-size:14px;
+    color: var(--muted);
+    margin:0;
+    line-height:1.6;
+  }
+
+  .hero__rule{
+    width: 44px;
+    height: 2px;
+    background: var(--gold);
+    margin: 18px auto 0;
+    border-radius: 2px;
+  }
+
+  /* ---------- Form card ---------- */
+  form{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    margin: 0 20px;
+    padding: 24px 20px 22px;
+  }
+
+  .field{
+    margin-bottom: 20px;
+  }
+
+  .field label{
+    display:block;
+    font-size: 13px;
+    font-weight:600;
+    color: var(--paper);
+    margin-bottom: 8px;
+  }
+
+  .field .hint{
+    font-size:12px;
+    color: var(--muted);
+    margin-top:6px;
+  }
+
+  input[type="text"],
+  input[type="tel"],
+  input[type="date"],
+  textarea{
+    width:100%;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--paper);
+    font-family:'Sarabun', sans-serif;
+    font-size:15px;
+    transition: border-color .15s ease;
+  }
+
+  input::placeholder, textarea::placeholder{ color: #6b665d; }
+
+  input:focus-visible, textarea:focus-visible, .chip:focus-visible{
+    outline: 2px solid var(--gold-bright);
+    outline-offset: 2px;
+  }
+
+  textarea{ min-height: 84px; resize: vertical; }
+
+  /* ---------- chip select (procedure / time) ---------- */
+  .chip-group{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+
+  .chip{
+    appearance:none;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--paper);
+    font-family:'Sarabun', sans-serif;
+    font-size: 13.5px;
+    padding: 9px 14px;
+    border-radius: 999px;
+    cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+
+  .chip[aria-pressed="true"]{
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #1a1408;
+    font-weight:600;
+  }
+
+  /* ---------- submit ---------- */
+  .submit-row{ margin-top: 26px; }
+
+  button.primary{
+    width:100%;
+    border:none;
+    border-radius: 10px;
+    padding: 15px 16px;
+    font-family:'Prompt', sans-serif;
+    font-weight:600;
+    font-size:15px;
+    letter-spacing: 0.02em;
+    background: var(--gold);
+    color:#1a1408;
+    cursor:pointer;
+    transition: background .15s ease, opacity .15s ease;
+  }
+
+  button.primary:hover{ background: var(--gold-bright); }
+  button.primary:disabled{ opacity:0.55; cursor:not-allowed; }
+
+  .error-text{
+    color: var(--error);
+    font-size:13px;
+    margin-top:8px;
+    display:none;
+  }
+
+  .error-text.show{ display:block; }
+
+  /* ---------- states: loading / success / fatal ---------- */
+  .state{
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    padding: 80px 32px;
+  }
+
+  .state.show{ display:flex; }
+
+  .spinner{
+    width:26px; height:26px;
+    border-radius:50%;
+    border: 2px solid var(--line);
+    border-top-color: var(--gold);
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 18px;
+  }
+
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  .state h2{
+    font-family:'Prompt', sans-serif;
+    font-size:19px;
+    margin:0 0 8px;
+  }
+
+  .state p{
+    font-size:14px;
+    color: var(--muted);
+    margin:0;
+    line-height:1.6;
+  }
+
+  .state.success .check{
+    width:52px; height:52px;
+    border-radius:50%;
+    background: rgba(147,183,155,0.14);
+    border: 1px solid var(--success);
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:18px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .spinner{ animation: none; border-top-color: var(--gold); }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Loading state -->
+  <div class="state show" id="state-loading">
+    <div class="spinner" aria-hidden="true"></div>
+    <h2>กำลังโหลด</h2>
+    <p>กรุณารอสักครู่</p>
+  </div>
+
+  <!-- Fatal / not-in-LINE state -->
+  <div class="state" id="state-fatal">
+    <h2>เปิดไม่ได้ในเบราว์เซอร์นี้</h2>
+    <p>กรุณาเปิดลิงก์นี้ผ่านแอป LINE เพื่อทำการจองคิวค่ะ</p>
+  </div>
+
+  <!-- Success state -->
+  <div class="state" id="state-success">
+    <div class="check" aria-hidden="true">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M5 13l4 4L19 7" stroke="#93b79b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h2>รับคำขอจองคิวแล้วค่ะ</h2>
+    <p>ทีมงาน Master Bangkok Clinic จะติดต่อกลับ<br>เพื่อยืนยันวัน-เวลาภายใน 24 ชั่วโมงค่ะ</p>
+  </div>
+
+  <!-- Main form -->
+  <div id="state-form">
+    <div class="hero">
+      <svg class="hero__nose" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M70 20 C 78 55, 66 78, 52 108 C 44 126, 50 140, 70 146 C 86 150, 104 148, 116 138"
+              stroke="#c9a66b" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <path d="M70 146 C 76 152, 92 154, 104 148" stroke="#c9a66b" stroke-width="2" stroke-linecap="round" fill="none"/>
+      </svg>
+      <p class="eyebrow">Master Bangkok Clinic</p>
+      <h1>จองคิวปรึกษา</h1>
+      <p>กรอกข้อมูลด้านล่าง ทีมงานจะติดต่อกลับเพื่อยืนยันคิวค่ะ</p>
+      <div class="hero__rule"></div>
+    </div>
+
+    <form id="booking-form" novalidate>
+
+      <div class="field">
+        <label for="fullname">ชื่อ-นามสกุล</label>
+        <input type="text" id="fullname" name="fullname" placeholder="เช่น สมหญิง ใจดี" required>
+      </div>
+
+      <div class="field">
+        <label for="phone">เบอร์โทรศัพท์</label>
+        <input type="tel" id="phone" name="phone" placeholder="0812345678" inputmode="numeric" required>
+        <div class="error-text" id="phone-error">กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง</div>
+      </div>
+
+      <div class="field">
+        <label>หัตถการที่สนใจ</label>
+        <div class="chip-group" id="service-group" role="radiogroup" aria-label="หัตถการที่สนใจ">
+          <button type="button" class="chip" role="radio" aria-pressed="false" data-value="nose">เสริมจมูก</button>
+          <button type="button" class="chip" role="radio" aria-pressed="false" data-value="botox">โบท็อกซ์</button>
+          <button type="button" class="chip" role="radio" aria-pressed="false" data-value="filler">ฟิลเลอร์</button>
+          <button type="button" class="chip" role="radio" aria-pressed="false" data-value="acne_scar">รักษาหลุมสิว</button>
+          <button type="button" class="chip" role="radio" aria-pressed="false" data-value="other">อื่นๆ</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="pref-date">วันที่สะดวก</label>
+        <input type="date" id="pref-date" name="pref_date" required>
+      </div>
+
+      <div class="field">
+        <label>ช่วงเวลาที่สะดวก</label>
+        <div class="chip-group" id="time-group" role="radiogroup" aria-label="ช่วงเวลาที่สะดวก">
+          <button type="button" class="chip" role="radio" aria-pressed="false" data-value="morning">เช้า 10:00–12:00</button>
+          <button type="button" class="chip" role="radio" aria-pressed="false" data-value="afternoon">บ่าย 13:00–16:00</button>
+          <button type="button" class="chip" role="radio" aria-pressed="false" data-value="evening">เย็น 17:00–19:00</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="note">หมายเหตุเพิ่มเติม (ถ้ามี)</label>
+        <textarea id="note" name="note" placeholder="เช่น เคยทำหัตถการอื่นมาก่อน, แพ้ยา ฯลฯ"></textarea>
+      </div>
+
+      <div class="submit-row">
+        <button type="submit" class="primary" id="submit-btn">ยืนยันการจอง</button>
+        <div class="error-text" id="form-error">กรุณากรอกข้อมูลให้ครบก่อนกดยืนยันค่ะ</div>
+      </div>
+
+    </form>
+  </div>
+
+</div>
+
+<script>
+  // ===================== CONFIG =====================
+  // แก้ค่า 2 ตัวนี้ก่อนใช้งานจริง
+  const CONFIG = {
+    LIFF_ID: "REPLACE_WITH_YOUR_LIFF_ID",           // จาก LINE Developers Console > LIFF tab
+    API_ENDPOINT: "https://your-domain.example.com/api/booking" // endpoint บน webhook server ของคุณ
+  };
+  // ====================================================
+
+  const el = (id) => document.getElementById(id);
+
+  function showState(name){
+    ["loading","fatal","success"].forEach(s => el(`state-${s}`).classList.remove("show"));
+    el("state-form").style.display = "none";
+    if (name === "form"){
+      el("state-form").style.display = "block";
+    } else {
+      el(`state-${name}`).classList.add("show");
+    }
+  }
+
+  function setupChipGroup(groupId){
+    const group = el(groupId);
+    const chips = group.querySelectorAll(".chip");
+    chips.forEach(chip => {
+      chip.addEventListener("click", () => {
+        chips.forEach(c => c.setAttribute("aria-pressed", "false"));
+        chip.setAttribute("aria-pressed", "true");
+      });
+    });
+  }
+
+  function getSelectedChip(groupId){
+    const group = el(groupId);
+    const selected = group.querySelector('.chip[aria-pressed="true"]');
+    return selected ? selected.dataset.value : null;
+  }
+
+  function validatePhone(value){
+    return /^0[0-9]{8,9}$/.test(value.replace(/[\s-]/g, ""));
+  }
+
+  async function submitBooking(profile, idToken){
+    const fullname = el("fullname").value.trim();
+    const phone = el("phone").value.trim();
+    const service = getSelectedChip("service-group");
+    const prefDate = el("pref-date").value;
+    const timeSlot = getSelectedChip("time-group");
+    const note = el("note").value.trim();
+
+    el("phone-error").classList.remove("show");
+    el("form-error").classList.remove("show");
+
+    if (!fullname || !phone || !service || !prefDate || !timeSlot){
+      el("form-error").classList.add("show");
+      return;
+    }
+    if (!validatePhone(phone)){
+      el("phone-error").classList.add("show");
+      return;
+    }
+
+    const btn = el("submit-btn");
+    btn.disabled = true;
+    btn.textContent = "กำลังส่งข้อมูล...";
+
+    try{
+      const res = await fetch(CONFIG.API_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id_token: idToken,
+          line_user_id: profile.userId,
+          display_name: profile.displayName,
+          fullname, phone, service,
+          pref_date: prefDate,
+          time_slot: timeSlot,
+          note
+        })
+      });
+      if (!res.ok) throw new Error("submit failed");
+
+      showState("success");
+      setTimeout(() => {
+        if (window.liff && liff.isInClient()) liff.closeWindow();
+      }, 2200);
+
+    } catch (err){
+      btn.disabled = false;
+      btn.textContent = "ยืนยันการจอง";
+      el("form-error").textContent = "ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้งค่ะ";
+      el("form-error").classList.add("show");
+      console.error(err);
+    }
+  }
+
+  async function init(){
+    setupChipGroup("service-group");
+    setupChipGroup("time-group");
+
+    // กันเลือกวันที่ย้อนหลัง
+    el("pref-date").min = new Date().toISOString().split("T")[0];
+
+    try{
+      await liff.init({ liffId: CONFIG.LIFF_ID });
+
+      if (!liff.isLoggedIn()){
+        liff.login();
+        return;
+      }
+
+      const profile = await liff.getProfile();
+      const idToken = liff.getIDToken();
+
+      showState("form");
+
+      el("booking-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        submitBooking(profile, idToken);
+      });
+
+    } catch (err){
+      console.error("LIFF init failed:", err);
+      showState("fatal");
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
