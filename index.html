@@ -457,7 +457,14 @@
           note
         })
       });
-      if (!res.ok) throw new Error("submit failed");
+
+      let resultData = null;
+      try { resultData = await res.json(); } catch (e) { /* ไม่ใช่ JSON ก็ปล่อยผ่าน */ }
+
+      if (!res.ok) {
+        const errCode = resultData && resultData.error ? resultData.error : `HTTP ${res.status}`;
+        throw new Error(errCode);
+      }
 
       showState("success");
       setTimeout(() => {
@@ -467,7 +474,8 @@
     } catch (err){
       btn.disabled = false;
       btn.textContent = "ยืนยันการจอง";
-      el("form-error").textContent = "ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้งค่ะ";
+      // แสดง error code จริงต่อท้าย เพื่อ diagnose ปัญหาได้ตรงจุดโดยไม่ต้องเดา
+      el("form-error").textContent = `ส่งข้อมูลไม่สำเร็จ (${err.message}) กรุณาลองใหม่หรือแจ้งแอดมินค่ะ`;
       el("form-error").classList.add("show");
       console.error(err);
     }
