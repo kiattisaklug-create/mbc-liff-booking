@@ -316,13 +316,15 @@
       </div>
 
       <div class="field">
-        <label>หัตถการที่สนใจ</label>
-        <div class="chip-group" id="service-group" role="radiogroup" aria-label="หัตถการที่สนใจ">
-          <button type="button" class="chip" role="radio" aria-pressed="false" data-value="nose">เสริมจมูก</button>
-          <button type="button" class="chip" role="radio" aria-pressed="false" data-value="botox">โบท็อกซ์</button>
-          <button type="button" class="chip" role="radio" aria-pressed="false" data-value="filler">ฟิลเลอร์</button>
-          <button type="button" class="chip" role="radio" aria-pressed="false" data-value="acne_scar">รักษาหลุมสิว</button>
-          <button type="button" class="chip" role="radio" aria-pressed="false" data-value="other">อื่นๆ</button>
+        <label>หัตถการที่สนใจ (เลือกได้มากกว่า 1 อย่าง)</label>
+        <div class="chip-group" id="service-group" role="group" aria-label="หัตถการที่สนใจ (เลือกได้มากกว่า 1 อย่าง)">
+          <button type="button" class="chip" role="checkbox" aria-pressed="false" data-value="nose">เสริมจมูก</button>
+          <button type="button" class="chip" role="checkbox" aria-pressed="false" data-value="eyelid">ทำตา 2 ชั้น</button>
+          <button type="button" class="chip" role="checkbox" aria-pressed="false" data-value="lips">ทำปากกระจับ</button>
+          <button type="button" class="chip" role="checkbox" aria-pressed="false" data-value="botox">โบท็อกซ์</button>
+          <button type="button" class="chip" role="checkbox" aria-pressed="false" data-value="filler">ฟิลเลอร์</button>
+          <button type="button" class="chip" role="checkbox" aria-pressed="false" data-value="acne_scar">รักษาหลุมสิว</button>
+          <button type="button" class="chip" role="checkbox" aria-pressed="false" data-value="other">อื่นๆ</button>
         </div>
       </div>
 
@@ -359,9 +361,9 @@
   // ===================== CONFIG =====================
   // แก้ค่า 2 ตัวนี้ก่อนใช้งานจริง
   const CONFIG = {
-     LIFF_ID: "2010925112-sWUQ6XUg",
-     API_ENDPOINT: "https://master-bangkok-clinic-line-production.up.railway.app/api/booking"
-   };
+    LIFF_ID: "REPLACE_WITH_YOUR_LIFF_ID",           // จาก LINE Developers Console > LIFF tab
+    API_ENDPOINT: "https://your-domain.example.com/api/booking" // endpoint บน webhook server ของคุณ
+  };
   // ====================================================
 
   const el = (id) => document.getElementById(id);
@@ -387,10 +389,29 @@
     });
   }
 
+  /** เลือกได้หลายอันพร้อมกัน (toggle แต่ละปุ่มอิสระ ไม่ deselect ปุ่มอื่น) ใช้กับหัตถการที่สนใจ */
+  function setupChipGroupMulti(groupId){
+    const group = el(groupId);
+    const chips = group.querySelectorAll(".chip");
+    chips.forEach(chip => {
+      chip.addEventListener("click", () => {
+        const isSelected = chip.getAttribute("aria-pressed") === "true";
+        chip.setAttribute("aria-pressed", String(!isSelected));
+      });
+    });
+  }
+
   function getSelectedChip(groupId){
     const group = el(groupId);
     const selected = group.querySelector('.chip[aria-pressed="true"]');
     return selected ? selected.dataset.value : null;
+  }
+
+  /** คืนค่าเป็น array ของทุกปุ่มที่ถูกเลือกไว้ ใช้กับกลุ่มแบบ multi-select */
+  function getSelectedChips(groupId){
+    const group = el(groupId);
+    const selected = group.querySelectorAll('.chip[aria-pressed="true"]');
+    return Array.from(selected).map(c => c.dataset.value);
   }
 
   function validatePhone(value){
@@ -400,7 +421,7 @@
   async function submitBooking(profile, idToken){
     const fullname = el("fullname").value.trim();
     const phone = el("phone").value.trim();
-    const service = getSelectedChip("service-group");
+    const services = getSelectedChips("service-group");
     const prefDate = el("pref-date").value;
     const timeSlot = getSelectedChip("time-group");
     const note = el("note").value.trim();
@@ -408,7 +429,8 @@
     el("phone-error").classList.remove("show");
     el("form-error").classList.remove("show");
 
-    if (!fullname || !phone || !service || !prefDate || !timeSlot){
+    if (!fullname || !phone || services.length === 0 || !prefDate || !timeSlot){
+      el("form-error").textContent = "กรุณากรอกข้อมูลให้ครบ (เลือกหัตถการอย่างน้อย 1 อย่าง) ก่อนกดยืนยันค่ะ";
       el("form-error").classList.add("show");
       return;
     }
@@ -429,7 +451,7 @@
           id_token: idToken,
           line_user_id: profile.userId,
           display_name: profile.displayName,
-          fullname, phone, service,
+          fullname, phone, services,
           pref_date: prefDate,
           time_slot: timeSlot,
           note
@@ -452,7 +474,7 @@
   }
 
   async function init(){
-    setupChipGroup("service-group");
+    setupChipGroupMulti("service-group");
     setupChipGroup("time-group");
 
     // กันเลือกวันที่ย้อนหลัง
