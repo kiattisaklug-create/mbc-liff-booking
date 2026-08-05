@@ -154,6 +154,29 @@
 
   textarea{ min-height: 84px; resize: vertical; }
 
+  /* ---------- slip upload ---------- */
+  .upload-zone{
+    border:2px dashed var(--line); border-radius:12px; padding:24px 16px;
+    text-align:center; cursor:pointer; transition:border-color .15s ease;
+  }
+  .upload-zone:hover, .upload-zone.dragover{ border-color: var(--gold); }
+  .upload-zone .icon{ font-size:28px; }
+  .upload-zone p{ margin:6px 0 0; font-size:13px; color:var(--muted); }
+  .upload-status{ font-size:12.5px; margin-top:8px; color:var(--muted); display:none; }
+  .upload-status.show{ display:block; }
+  .preview-wrap{ position:relative; display:none; margin-top:12px; }
+  .preview-wrap.show{ display:block; }
+  .preview-wrap img{
+    width:100%; max-height:320px; object-fit:contain; border-radius:12px;
+    border:1px solid var(--line); background:var(--surface-2);
+  }
+  .remove-image-btn{
+    position:absolute; top:10px; right:10px; background:rgba(18,18,18,0.85);
+    border:1px solid var(--line); color:var(--paper); border-radius:999px;
+    width:32px; height:32px; cursor:pointer; font-size:16px; line-height:1;
+  }
+  .remove-image-btn:hover{ border-color: var(--error); color: var(--error); }
+
   /* ---------- chip select (procedure / time) ---------- */
   .chip-group{
     display:flex;
@@ -343,6 +366,21 @@
       </div>
 
       <div class="field">
+        <label>แนบสลิปการโอนเงิน (บังคับ) <span style="color:var(--gold);">*</span></label>
+        <div class="upload-zone" id="slip-upload-zone">
+          <div class="icon">🧾</div>
+          <p><strong>แตะเพื่อเลือกรูปสลิป</strong> หรือถ่ายรูปสลิปโอนเงิน</p>
+          <p>รองรับ JPG, PNG</p>
+        </div>
+        <input type="file" id="slip-file-input" accept="image/jpeg,image/png" style="display:none;">
+        <div class="upload-status" id="slip-upload-status"></div>
+        <div class="preview-wrap" id="slip-preview-wrap">
+          <img id="slip-preview-img" src="" alt="ตัวอย่างสลิปโอนเงิน">
+          <button class="remove-image-btn" id="slip-remove-btn" type="button">✕</button>
+        </div>
+      </div>
+
+      <div class="field">
         <label for="note">หมายเหตุเพิ่มเติม (ถ้ามี)</label>
         <textarea id="note" name="note" placeholder="เช่น เคยทำหัตถการอื่นมาก่อน, แพ้ยา ฯลฯ"></textarea>
       </div>
@@ -364,7 +402,12 @@
     LIFF_ID: "2010925112-sWUQ6XUg",           // LIFF ID จริงของ Master Bangkok Clinic
     API_ENDPOINT: "https://master-bangkok-clinic-line-production.up.railway.app/api/booking" // Railway endpoint จริง
   };
+  // endpoint อัพโหลดสลิป ใช้โดเมนเดียวกับ API_ENDPOINT อัตโนมัติ (ไม่ต้องตั้งค่าซ้ำ)
+  const SLIP_UPLOAD_ENDPOINT = CONFIG.API_ENDPOINT.replace(/\/api\/booking\/?$/, "/api/upload-slip");
   // ====================================================
+
+  let uploadedSlipUrl = null;
+  let currentIdToken = null;
 
   const el = (id) => document.getElementById(id);
 
@@ -418,6 +461,74 @@
     return /^0[0-9]{8,9}$/.test(value.replace(/[\s-]/g, ""));
   }
 
+  // ---------- อัพโหลดสลิปโอนเงิน ----------
+  function showSlipStatus(text, isError){
+    const s = el("slip-upload-status");
+    s.textContent = text;
+    s.style.color = isError ? "var(--error)" : "var(--muted)";
+    s.classList.toggle("show", !!text);
+  }
+
+  async function handleSlipFile(file){
+    if (!['image/jpeg', 'image/png'].includes(file.type)){
+      showSlipStatus("รองรับเฉพาะไฟล์ JPG หรือ PNG ค่ะ", true);
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024){
+      showSlipStatus("ไฟล์ใหญ่เกิน 10MB ค่ะ", true);
+      return;
+    }
+    if (!currentIdToken){
+      showSlipStatus("ระบบยังไม่พร้อม กรุณารอสักครู่แล้วลองใหม่ค่ะ", true);
+      return;
+    }
+
+    showSlipStatus("กำลังอัพโหลดสลิป...", false);
+
+    const formData = new FormData();
+    formData.append("slip", file);
+    formData.append("id_token", currentIdToken);
+
+    try{
+      const res = await fetch(SLIP_UPLOAD_ENDPOINT, { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "upload failed");
+
+      uploadedSlipUrl = data.slip_url;
+      el("slip-preview-img").src = uploadedSlipUrl;
+      el("slip-preview-wrap").classList.add("show");
+      el("slip-upload-zone").style.display = "none";
+      showSlipStatus("", false);
+    } catch (err){
+      showSlipStatus("อัพโหลดสลิปไม่สำเร็จ ลองใหม่อีกครั้งค่ะ", true);
+      console.error(err);
+    }
+  }
+
+  function setupSlipUpload(){
+    const zone = el("slip-upload-zone");
+    const fileInput = el("slip-file-input");
+
+    zone.addEventListener("click", () => fileInput.click());
+    zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("dragover"); });
+    zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
+    zone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      zone.classList.remove("dragover");
+      if (e.dataTransfer.files.length) handleSlipFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener("change", () => {
+      if (fileInput.files.length) handleSlipFile(fileInput.files[0]);
+    });
+
+    el("slip-remove-btn").addEventListener("click", () => {
+      uploadedSlipUrl = null;
+      el("slip-preview-wrap").classList.remove("show");
+      zone.style.display = "block";
+      fileInput.value = "";
+    });
+  }
+
   async function submitBooking(profile, idToken){
     const fullname = el("fullname").value.trim();
     const phone = el("phone").value.trim();
@@ -431,6 +542,11 @@
 
     if (!fullname || !phone || services.length === 0 || !prefDate || !timeSlot){
       el("form-error").textContent = "กรุณากรอกข้อมูลให้ครบ (เลือกหัตถการอย่างน้อย 1 อย่าง) ก่อนกดยืนยันค่ะ";
+      el("form-error").classList.add("show");
+      return;
+    }
+    if (!uploadedSlipUrl){
+      el("form-error").textContent = "กรุณาแนบสลิปการโอนเงินก่อนกดยืนยันค่ะ";
       el("form-error").classList.add("show");
       return;
     }
@@ -454,7 +570,8 @@
           fullname, phone, services,
           pref_date: prefDate,
           time_slot: timeSlot,
-          note
+          note,
+          payment_slip_url: uploadedSlipUrl
         })
       });
 
@@ -484,6 +601,7 @@
   async function init(){
     setupChipGroupMulti("service-group");
     setupChipGroup("time-group");
+    setupSlipUpload();
 
     // กันเลือกวันที่ย้อนหลัง
     el("pref-date").min = new Date().toISOString().split("T")[0];
@@ -498,6 +616,7 @@
 
       const profile = await liff.getProfile();
       const idToken = liff.getIDToken();
+      currentIdToken = idToken;
 
       showState("form");
 
