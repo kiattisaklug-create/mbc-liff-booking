@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>จองคิวปรึกษา — Master Bangkok Clinic</title>
+<title>จองคิวปรึกษา — MASTER CLINIC</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
@@ -153,6 +153,21 @@
   }
 
   textarea{ min-height: 84px; resize: vertical; }
+
+  /* ---------- เลือกกลุ่มลูกค้า: นัดผ่าตัด / นัดปรึกษา ---------- */
+  .booking-type-picker{
+    display:flex; gap:10px; margin-bottom:22px;
+  }
+  .booking-type-card{
+    flex:1; border:1.5px solid var(--line); border-radius:12px; padding:14px 12px;
+    cursor:pointer; text-align:center; transition:border-color .15s ease, background .15s ease;
+  }
+  .booking-type-card:hover{ border-color: var(--gold); }
+  .booking-type-card.selected{ border-color: var(--gold); background: rgba(201,166,107,0.1); }
+  .booking-type-card .bt-title{
+    font-family:'Prompt', sans-serif; font-weight:600; font-size:14px; color: var(--paper); margin-bottom:4px;
+  }
+  .booking-type-card .bt-desc{ font-size:11.5px; color: var(--muted); line-height:1.4; }
 
   /* ---------- slip upload ---------- */
   .upload-zone{
@@ -308,7 +323,7 @@
       </svg>
     </div>
     <h2>รับคำขอจองคิวแล้วค่ะ</h2>
-    <p>ทีมงาน Master Bangkok Clinic จะติดต่อกลับ<br>เพื่อยืนยันวัน-เวลาภายใน 24 ชั่วโมงค่ะ</p>
+    <p>ทีมงาน MASTER CLINIC จะติดต่อกลับ<br>เพื่อยืนยันวัน-เวลาภายใน 24 ชั่วโมงค่ะ</p>
   </div>
 
   <!-- Main form -->
@@ -319,13 +334,27 @@
               stroke="#c9a66b" stroke-width="2" stroke-linecap="round" fill="none"/>
         <path d="M70 146 C 76 152, 92 154, 104 148" stroke="#c9a66b" stroke-width="2" stroke-linecap="round" fill="none"/>
       </svg>
-      <p class="eyebrow">Master Bangkok Clinic</p>
+      <p class="eyebrow">MASTER CLINIC</p>
       <h1>จองคิวปรึกษา</h1>
       <p>กรอกข้อมูลด้านล่าง ทีมงานจะติดต่อกลับเพื่อยืนยันคิวค่ะ</p>
       <div class="hero__rule"></div>
     </div>
 
     <form id="booking-form" novalidate>
+
+      <div class="field">
+        <label>ต้องการนัดหมายแบบไหน</label>
+        <div class="booking-type-picker">
+          <div class="booking-type-card selected" id="booking-type-surgery" data-type="surgery">
+            <div class="bt-title">นัดหมายทำศัลยกรรม</div>
+            <div class="bt-desc">แนบสลิปมัดจำ ทีมงานตรวจสอบแล้วติดต่อกลับเพื่อลงวัน-เวลาทำศัลยกรรม</div>
+          </div>
+          <div class="booking-type-card" id="booking-type-consult" data-type="consult">
+            <div class="bt-title">นัดปรึกษา</div>
+            <div class="bt-desc">เลือกวันที่สะดวก ไม่ต้องแนบสลิป ทีมงานจะจัดสรรเวลาให้อีกครั้ง</div>
+          </div>
+        </div>
+      </div>
 
       <div class="field">
         <label for="fullname">ชื่อ-นามสกุล</label>
@@ -356,16 +385,7 @@
         <input type="date" id="pref-date" name="pref_date" required>
       </div>
 
-      <div class="field">
-        <label>ช่วงเวลาที่สะดวก</label>
-        <div class="chip-group" id="time-group" role="radiogroup" aria-label="ช่วงเวลาที่สะดวก">
-          <button type="button" class="chip" role="radio" aria-pressed="false" data-value="morning">เช้า 10:00–12:00</button>
-          <button type="button" class="chip" role="radio" aria-pressed="false" data-value="afternoon">บ่าย 13:00–16:00</button>
-          <button type="button" class="chip" role="radio" aria-pressed="false" data-value="evening">เย็น 17:00–19:00</button>
-        </div>
-      </div>
-
-      <div class="field">
+      <div class="field" id="slip-field">
         <label>แนบสลิปการโอนเงิน (บังคับ) <span style="color:var(--gold);">*</span></label>
         <div class="upload-zone" id="slip-upload-zone">
           <div class="icon">🧾</div>
@@ -399,7 +419,7 @@
   // ===================== CONFIG =====================
   // แก้ค่า 2 ตัวนี้ก่อนใช้งานจริง
   const CONFIG = {
-    LIFF_ID: "2010925112-sWUQ6XUg",           // LIFF ID จริงของ Master Bangkok Clinic
+    LIFF_ID: "2010925112-sWUQ6XUg",           // LIFF ID จริงของ MASTER CLINIC
     API_ENDPOINT: "https://master-bangkok-clinic-line-production.up.railway.app/api/booking" // Railway endpoint จริง
   };
   // endpoint อัพโหลดสลิป ใช้โดเมนเดียวกับ API_ENDPOINT อัตโนมัติ (ไม่ต้องตั้งค่าซ้ำ)
@@ -408,8 +428,33 @@
 
   let uploadedSlipUrl = null;
   let currentIdToken = null;
+  let selectedBookingType = "surgery";  // ค่าเริ่มต้น: นัดหมายทำศัลยกรรม (ตรงกับการ์ดที่ selected ไว้ก่อนใน HTML)
 
   const el = (id) => document.getElementById(id);
+
+  function setupBookingTypePicker(){
+    const surgeryCard = el("booking-type-surgery");
+    const consultCard = el("booking-type-consult");
+    const slipField = el("slip-field");
+
+    function selectType(type){
+      selectedBookingType = type;
+      surgeryCard.classList.toggle("selected", type === "surgery");
+      consultCard.classList.toggle("selected", type === "consult");
+      // กลุ่มนัดปรึกษาไม่ต้องแนบสลิป ซ่อนช่องนี้ไปเลยกันสับสน (backend ก็ไม่บังคับ field นี้เช่นกัน)
+      slipField.style.display = type === "surgery" ? "block" : "none";
+      if (type === "consult"){
+        // ล้างค่าสลิปที่อาจแนบไว้ก่อนหน้า ถ้าลูกค้าสลับกลุ่มไปมา กันส่งสลิปเก่าติดไปโดยไม่ตั้งใจ
+        uploadedSlipUrl = null;
+        el("slip-preview-wrap").classList.remove("show");
+        el("slip-upload-zone").style.display = "block";
+        el("slip-file-input").value = "";
+      }
+    }
+
+    surgeryCard.addEventListener("click", () => selectType("surgery"));
+    consultCard.addEventListener("click", () => selectType("consult"));
+  }
 
   function showState(name){
     ["loading","fatal","success"].forEach(s => el(`state-${s}`).classList.remove("show"));
@@ -534,18 +579,18 @@
     const phone = el("phone").value.trim();
     const services = getSelectedChips("service-group");
     const prefDate = el("pref-date").value;
-    const timeSlot = getSelectedChip("time-group");
     const note = el("note").value.trim();
 
     el("phone-error").classList.remove("show");
     el("form-error").classList.remove("show");
 
-    if (!fullname || !phone || services.length === 0 || !prefDate || !timeSlot){
+    if (!fullname || !phone || services.length === 0 || !prefDate){
       el("form-error").textContent = "กรุณากรอกข้อมูลให้ครบ (เลือกหัตถการอย่างน้อย 1 อย่าง) ก่อนกดยืนยันค่ะ";
       el("form-error").classList.add("show");
       return;
     }
-    if (!uploadedSlipUrl){
+    // บังคับแนบสลิปเฉพาะกลุ่ม "นัดหมายทำศัลยกรรม" เท่านั้น กลุ่ม "นัดปรึกษา" ไม่ต้องแนบ
+    if (selectedBookingType === "surgery" && !uploadedSlipUrl){
       el("form-error").textContent = "กรุณาแนบสลิปการโอนเงินก่อนกดยืนยันค่ะ";
       el("form-error").classList.add("show");
       return;
@@ -569,9 +614,9 @@
           display_name: profile.displayName,
           fullname, phone, services,
           pref_date: prefDate,
-          time_slot: timeSlot,
           note,
-          payment_slip_url: uploadedSlipUrl
+          booking_type: selectedBookingType,
+          payment_slip_url: selectedBookingType === "surgery" ? uploadedSlipUrl : null
         })
       });
 
@@ -600,7 +645,7 @@
 
   async function init(){
     setupChipGroupMulti("service-group");
-    setupChipGroup("time-group");
+    setupBookingTypePicker();
     setupSlipUpload();
 
     // กันเลือกวันที่ย้อนหลัง
