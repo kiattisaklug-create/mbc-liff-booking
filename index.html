@@ -384,7 +384,7 @@
         <label for="pref-date">วันที่สะดวก</label>
         <input type="date" id="pref-date" name="pref_date" required>
         <div class="error-text" id="date-closed-error"></div>
-        <div id="date-closed-hint" style="font-size:12.5px; opacity:.75; margin-top:6px;"></div>
+        <div id="date-closed-hint" style="font-size:12.5px; opacity:.75; margin-top:6px;">หมายเหตุ: ไม่สามารถจองได้ในวันพฤหัสบดีและวันเสาร์</div>
       </div>
 
       <div class="field" id="slip-field">
@@ -577,7 +577,13 @@
   }
 
   // ---- วันที่ปิดรับจอง (ดึงกฎจาก Railway: แก้ได้ที่ไฟล์ booking_rules.py ฝั่งเซิร์ฟเวอร์) ----
-  let bookingRules = null;
+  // ค่าเริ่มต้นในฟอร์ม (ใช้ทันทีแม้เน็ตช้า) — ถ้าดึงกฎจากเซิร์ฟเวอร์ได้ จะใช้ค่าจากเซิร์ฟเวอร์แทน
+  // วันในสัปดาห์: จันทร์=0 อังคาร=1 พุธ=2 พฤหัส=3 ศุกร์=4 เสาร์=5 อาทิตย์=6
+  let bookingRules = {
+    closed_weekdays: [3, 5],
+    closed_dates: [],
+    message: "ขออภัยค่ะ วันดังกล่าวคุณหมอไม่ว่าง กรุณาเลือกวันอื่นค่ะ"
+  };
   function isClosedDay(dateStr){
     if (!bookingRules || !dateStr) return false;
     const [y, m, d] = dateStr.split("-").map(Number);
@@ -695,7 +701,7 @@
 
     // กันเลือกวันที่ย้อนหลัง
     el("pref-date").min = new Date().toISOString().split("T")[0];
-    el("pref-date").addEventListener("change", checkPrefDate);
+    ["change","input","blur"].forEach(ev => el("pref-date").addEventListener(ev, checkPrefDate));
     loadBookingRules();
 
     try{
