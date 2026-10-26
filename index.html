@@ -383,6 +383,8 @@
       <div class="field">
         <label for="pref-date">วันที่สะดวก</label>
         <input type="date" id="pref-date" name="pref_date" required>
+        <div class="error-text" id="date-closed-error"></div>
+        <div id="date-closed-hint" style="font-size:12.5px; opacity:.75; margin-top:6px;"></div>
       </div>
 
       <div class="field" id="slip-field">
@@ -574,6 +576,42 @@
     });
   }
 
+  // ---- วันที่ปิดรับจอง (ดึงกฎจาก Railway: แก้ได้ที่ไฟล์ booking_rules.py ฝั่งเซิร์ฟเวอร์) ----
+  let bookingRules = null;
+  function isClosedDay(dateStr){
+    if (!bookingRules || !dateStr) return false;
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const jsDay = new Date(y, m - 1, d).getDay();            // อาทิตย์=0 ... เสาร์=6
+    const idx = (jsDay + 6) % 7;                              // แปลงเป็น จันทร์=0 ... อาทิตย์=6 ให้ตรงกับฝั่งเซิร์ฟเวอร์
+    return bookingRules.closed_weekdays.includes(idx) || bookingRules.closed_dates.includes(dateStr);
+  }
+  function checkPrefDate(){
+    const input = el("pref-date");
+    const box = el("date-closed-error");
+    if (isClosedDay(input.value)){
+      box.textContent = bookingRules.message;
+      box.classList.add("show");
+      input.value = "";                                       // ล้างวันที่ที่เลือกผิด ให้เลือกใหม่
+      return false;
+    }
+    box.classList.remove("show");
+    return true;
+  }
+  async function loadBookingRules(){
+    try{
+      const res = await fetch(CONFIG.API_ENDPOINT.replace(/\/api\/booking\/?$/, "/api/booking-rules"));
+      const data = await res.json();
+      if (data.ok){
+        bookingRules = data;
+        const parts = [];
+        if (data.closed_weekday_names.length) parts.push("วัน" + data.closed_weekday_names.join(" และวัน"));
+        if (data.closed_dates.length) parts.push("วันหยุดพิเศษบางวัน");
+        if (parts.length) el("date-closed-hint").textContent = "หมายเหตุ: ไม่สามารถจองได้ในช่วง " + parts.join(" และ ");
+        checkPrefDate();
+      }
+    } catch (e){ console.error("โหลดกฎวันปิดรับจองไม่สำเร็จ (ระบบหลังบ้านจะตรวจซ้ำให้อีกชั้น)", e); }
+  }
+
   async function submitBooking(profile, idToken){
     const fullname = el("fullname").value.trim();
     const phone = el("phone").value.trim();
@@ -586,6 +624,11 @@
 
     if (!fullname || !phone || services.length === 0 || !prefDate){
       el("form-error").textContent = "กรุณากรอกข้อมูลให้ครบ (เลือกหัตถการอย่างน้อย 1 อย่าง) ก่อนกดยืนยันค่ะ";
+      el("form-error").classList.add("show");
+      return;
+    }
+    if (!checkPrefDate()){
+      el("form-error").textContent = "กรุณาเลือกวันที่สะดวกใหม่ก่อนกดยืนยันค่ะ";
       el("form-error").classList.add("show");
       return;
     }
@@ -637,7 +680,9 @@
       btn.disabled = false;
       btn.textContent = "ยืนยันการจอง";
       // แสดง error code จริงต่อท้าย เพื่อ diagnose ปัญหาได้ตรงจุดโดยไม่ต้องเดา
-      el("form-error").textContent = `ส่งข้อมูลไม่สำเร็จ (${err.message}) กรุณาลองใหม่หรือแจ้งแอดมินค่ะ`;
+      el("form-error").textContent = err.message === "closed_day"
+        ? "วันที่เลือกคุณหมอไม่ว่างค่ะ กรุณาเลือกวันอื่น"
+        : `ส่งข้อมูลไม่สำเร็จ (${err.message}) กรุณาลองใหม่หรือแจ้งแอดมินค่ะ`;
       el("form-error").classList.add("show");
       console.error(err);
     }
@@ -650,6 +695,8 @@
 
     // กันเลือกวันที่ย้อนหลัง
     el("pref-date").min = new Date().toISOString().split("T")[0];
+    el("pref-date").addEventListener("change", checkPrefDate);
+    loadBookingRules();
 
     try{
       await liff.init({ liffId: CONFIG.LIFF_ID });
