@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>จองคิวปรึกษา — MASTER CLINIC</title>
+<title>MASTER CLINIC</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
@@ -334,8 +334,7 @@
               stroke="#c9a66b" stroke-width="2" stroke-linecap="round" fill="none"/>
         <path d="M70 146 C 76 152, 92 154, 104 148" stroke="#c9a66b" stroke-width="2" stroke-linecap="round" fill="none"/>
       </svg>
-      <p class="eyebrow">MASTER CLINIC</p>
-      <h1>จองคิวปรึกษา</h1>
+      <p class="eyebrow" style="font-size:22px; letter-spacing:.28em; margin-bottom:14px;">MASTER CLINIC</p>
       <p>กรอกข้อมูลด้านล่าง ทีมงานจะติดต่อกลับเพื่อยืนยันคิวค่ะ</p>
       <div class="hero__rule"></div>
     </div>
@@ -368,15 +367,9 @@
       </div>
 
       <div class="field">
-        <label>หัตถการที่สนใจ (เลือกได้มากกว่า 1 อย่าง)</label>
-        <div class="chip-group" id="service-group" role="group" aria-label="หัตถการที่สนใจ (เลือกได้มากกว่า 1 อย่าง)">
-          <button type="button" class="chip" role="checkbox" aria-pressed="false" data-value="nose">เสริมจมูก</button>
-          <button type="button" class="chip" role="checkbox" aria-pressed="false" data-value="eyelid">ทำตา 2 ชั้น</button>
-          <button type="button" class="chip" role="checkbox" aria-pressed="false" data-value="lips">ทำปากกระจับ</button>
-          <button type="button" class="chip" role="checkbox" aria-pressed="false" data-value="botox">โบท็อกซ์</button>
-          <button type="button" class="chip" role="checkbox" aria-pressed="false" data-value="filler">ฟิลเลอร์</button>
-          <button type="button" class="chip" role="checkbox" aria-pressed="false" data-value="acne_scar">รักษาหลุมสิว</button>
-          <button type="button" class="chip" role="checkbox" aria-pressed="false" data-value="other">อื่นๆ</button>
+        <label>หัตถการที่สนใจ</label>
+        <div class="chip-group" id="service-group" role="group" aria-label="หัตถการที่สนใจ">
+          <button type="button" class="chip" role="checkbox" aria-pressed="true" data-value="nose">ศัลยกรรมเสริมจมูก</button>
         </div>
       </div>
 
@@ -621,7 +614,8 @@
   async function submitBooking(profile, idToken){
     const fullname = el("fullname").value.trim();
     const phone = el("phone").value.trim();
-    const services = getSelectedChips("service-group");
+    let services = getSelectedChips("service-group");
+    if (services.length === 0) services = ["nose"];   // มีหัตถการเดียว: ศัลยกรรมเสริมจมูก
     const prefDate = el("pref-date").value;
     const note = el("note").value.trim();
 
