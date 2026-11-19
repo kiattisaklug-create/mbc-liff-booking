@@ -373,6 +373,13 @@
         </div>
       </div>
 
+      <div class="field" id="price-field">
+        <label for="quoted-price">ราคาที่ตกลงกับเซลล์ (บาท) <span style="color:var(--gold);">*</span></label>
+        <input type="text" id="quoted-price" name="quoted_price" placeholder="เช่น 45,000" inputmode="numeric" autocomplete="off">
+        <div class="error-text" id="price-error">กรุณากรอกราคาที่ตกลงกับเซลล์เป็นตัวเลข</div>
+        <div style="font-size:12.5px; opacity:.75; margin-top:6px;">กรอกตามราคาที่เซลล์แจ้ง เพื่อให้ทีมงานตรวจสอบให้ตรงกันค่ะ</div>
+      </div>
+
       <div class="field">
         <label for="pref-date">วันที่สะดวก</label>
         <input type="date" id="pref-date" name="pref_date" required>
@@ -438,6 +445,7 @@
       consultCard.classList.toggle("selected", type === "consult");
       // กลุ่มนัดปรึกษาไม่ต้องแนบสลิป ซ่อนช่องนี้ไปเลยกันสับสน (backend ก็ไม่บังคับ field นี้เช่นกัน)
       slipField.style.display = type === "surgery" ? "block" : "none";
+      el("price-field").style.display = type === "surgery" ? "block" : "none";   // นัดปรึกษาไม่ต้องกรอกราคา
       if (type === "consult"){
         // ล้างค่าสลิปที่อาจแนบไว้ก่อนหน้า ถ้าลูกค้าสลับกลุ่มไปมา กันส่งสลิปเก่าติดไปโดยไม่ตั้งใจ
         uploadedSlipUrl = null;
@@ -621,6 +629,8 @@
 
     el("phone-error").classList.remove("show");
     el("form-error").classList.remove("show");
+    el("price-error").classList.remove("show");
+    const quotedPrice = parseInt((el("quoted-price").value || "").replace(/[^0-9]/g, ""), 10) || 0;
 
     if (!fullname || !phone || services.length === 0 || !prefDate){
       el("form-error").textContent = "กรุณากรอกข้อมูลให้ครบ (เลือกหัตถการอย่างน้อย 1 อย่าง) ก่อนกดยืนยันค่ะ";
@@ -630,6 +640,11 @@
     if (!checkPrefDate()){
       el("form-error").textContent = "กรุณาเลือกวันที่สะดวกใหม่ก่อนกดยืนยันค่ะ";
       el("form-error").classList.add("show");
+      return;
+    }
+    if (selectedBookingType === "surgery" && (quotedPrice < 1 || quotedPrice > 9999999)){
+      el("price-error").classList.add("show");
+      el("quoted-price").scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     // บังคับแนบสลิปเฉพาะกลุ่ม "นัดหมายทำศัลยกรรม" เท่านั้น กลุ่ม "นัดปรึกษา" ไม่ต้องแนบ
@@ -659,6 +674,7 @@
           pref_date: prefDate,
           note,
           booking_type: selectedBookingType,
+          quoted_price: selectedBookingType === "surgery" ? quotedPrice : null,
           payment_slip_url: selectedBookingType === "surgery" ? uploadedSlipUrl : null
         })
       });
@@ -688,7 +704,17 @@
     }
   }
 
+  function setupPriceInput(){
+    const inp = el("quoted-price");
+    inp.addEventListener("input", () => {   // ใส่ลูกน้ำให้อัตโนมัติ
+      const digits = inp.value.replace(/[^0-9]/g, "").slice(0, 7);
+      inp.value = digits ? Number(digits).toLocaleString("en-US") : "";
+      el("price-error").classList.remove("show");
+    });
+  }
+
   async function init(){
+    setupPriceInput();
     setupChipGroupMulti("service-group");
     setupBookingTypePicker();
     setupSlipUpload();
